@@ -10,12 +10,13 @@ import (
 	"github.com/byuoitav/common/log"
 )
 
+//PanasonicPowerResponse is a struct to help with XML parsing
 type PanasonicPowerResponse struct {
 	Result xml.Name `xml:"RESULT"`
 	Power  string   `xml:"POWER"`
 }
 
-//This function sets the power of the projector, turning it either on or off.
+//SetPower sets the power of the projector, turning it either on or off.
 func SetPower(address string, powerValue string) error {
 
 	command := fmt.Sprintf("http://%s/cgi-bin/controlCmd.cgi?param=POWER&value=%s", address, powerValue)
@@ -33,7 +34,7 @@ func SetPower(address string, powerValue string) error {
 	return nil
 }
 
-//This function gets the status of the projector, returning if it is on or on standby
+//GetPower gets the status of the projector, returning if it is on or on standby
 func GetPower(address string) error {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=POWER", address)
 
@@ -62,7 +63,7 @@ func GetPower(address string) error {
 		return err
 	}
 
-	log.L.Infof("%s", status.Power)
+	log.L.Infof("Power status: %s", status.Power)
 	return nil
 
 }

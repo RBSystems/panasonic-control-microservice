@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"github.com/byuoitav/authmiddleware"
-	"github.com/byuoitav/panasonic-microservice/handlers"
+	"github.com/byuoitav/panasonic-control-microservice/handlers"
 	"github.com/labstack/echo"
 	"github.com/labstack/echo/middleware"
 )
@@ -30,11 +30,11 @@ func main() {
 	secure.GET("/:address/input/:port", handlers.SetInputPort)
 
 	//status endpoints
-	// secure.GET("/:address/volume/level", handlers.VolumeLevel)
-	// secure.GET("/:address/volume/mute/status", handlers.MuteStatus)
+	secure.GET("/:address/volume/level", handlers.VolumeLevel)
+	secure.GET("/:address/volume/mute/status", handlers.MuteStatus)
 	secure.GET("/:address/power/status", handlers.PowerStatus)
-	// secure.GET("/:address/display/status", handlers.BlankedStatus)
-	// secure.GET("/:address/input/current", handlers.InputStatus)
+	secure.GET("/:address/display/status", handlers.BlankedStatus)
+	secure.GET("/:address/input/current", handlers.InputStatus)
 
 	server := http.Server{
 		Addr:           port,
