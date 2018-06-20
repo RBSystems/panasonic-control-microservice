@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	se "github.com/byuoitav/av-api/statusevaluators"
 	"github.com/byuoitav/common/log"
 	"github.com/byuoitav/panasonic-control-microservice/helpers"
 	"github.com/labstack/echo"
@@ -19,28 +20,30 @@ func PowerOn(context echo.Context) error {
 	address := context.Param("address")                        //Get the address of the projector
 	powerValue := "ON"
 
+	//Send the Command to the helper to turn on power
 	err := helpers.SetPower(address, powerValue)
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	//return the result turning on in a JSON format
+	return context.JSON(http.StatusOK, se.PowerStatus{"on"})
 }
 
 //PowerStandby sets the projector in standby mode
 func PowerStandby(context echo.Context) error {
-	log.L.Info("Going on standby %s...", context.Param("address")) //Print that the device is powering on
-	address := context.Param("address")                            //Get the address of the projector
+	log.L.Infof("Going on standby %s...", context.Param("address")) //Print that the device is powering on
+	address := context.Param("address")                             //Get the address of the projector
 	powerValue := "OFF"
 
+	//Send the Command to the helper to turn off power
 	err := helpers.SetPower(address, powerValue)
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return context.JSON(http.StatusOK, err)
+	//return the result of going on standby in a JSON format
+	return context.JSON(http.StatusOK, se.PowerStatus{"standby"})
 }
 
 //PowerStatus returns the power status, either on or standby
@@ -48,13 +51,13 @@ func PowerStatus(context echo.Context) error {
 	log.L.Infof("Getting power status of %s...", context.Param("address")) //Print that the device is powering on
 	address := context.Param("address")                                    //Get the address of the projector
 
-	err := helpers.GetPower(address)
-
+	//Send the Command to the helper to get power status
+	status, err := helpers.GetPower(address)
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	return context.JSON(http.StatusOK, status)
 }
 
 ////////////////////////////////////////
@@ -68,12 +71,11 @@ func SetVolume(context echo.Context) error {
 	log.L.Infof("Setting Volume to %v on %s", volumeLevel, address)
 
 	err = helpers.SetVolume(address, uint8(volumeLevel)) //Use SetVolume to change the volume level
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return context.JSON(http.StatusOK, err)
+	return context.JSON(http.StatusOK, se.Volume{volumeLevel})
 }
 
 //VolumeLevel returns the volume Level, giving the volume level number
@@ -81,13 +83,12 @@ func VolumeLevel(context echo.Context) error {
 	log.L.Infof("Getting voulme status of %s...", context.Param("address")) //Print that the device is powering on
 	address := context.Param("address")                                     //Get the address of the projector
 
-	err := helpers.GetVolume(address) //Calls the GetVolume fuction that parses the XML
-
+	level, err := helpers.GetVolume(address) //Calls the GetVolume fuction that parses the XML
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	return context.JSON(http.StatusOK, level)
 }
 
 //Mute mutes the AUDIO of a projector
@@ -97,7 +98,6 @@ func Mute(context echo.Context) error {
 	muteValue := "ON"
 
 	err := helpers.SetAudioMute(address, muteValue) //Set the value to 'ON'
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
@@ -112,7 +112,6 @@ func UnMute(context echo.Context) error {
 	muteValue := "OFF"
 
 	err := helpers.SetAudioMute(address, muteValue) //Sets the value to 'OFF'
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
@@ -126,13 +125,12 @@ func MuteStatus(context echo.Context) error {
 	log.L.Infof("Getting mute status of %s...", context.Param("address")) //Print that the device is powering on
 	address := context.Param("address")                                   //Get the address of the projector
 
-	err := helpers.GetMute(address) //Calls the GetMute fuction that parses the XML
-
+	status, err := helpers.GetMute(address) //Calls the GetMute fuction that parses the XML
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	return context.JSON(http.StatusOK, status)
 }
 
 ////////////////////////////////////////
@@ -146,12 +144,11 @@ func SetInputPort(context echo.Context) error {
 	port := context.Param("port")       //Get the input port of the projector
 
 	err := helpers.SetInputPort(address, port) //Use SetInput to change to the selected port
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return context.JSON(http.StatusOK, err)
+	return context.JSON(http.StatusOK, se.Input{port})
 }
 
 //DisplayBlank sets the display screen to blank
@@ -161,7 +158,6 @@ func DisplayBlank(context echo.Context) error {
 	muteValue := "ON"                   //Value is on to turn on the mute
 
 	err := helpers.SetAVMute(address, muteValue) //Sets the value to 'ON'
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
@@ -176,7 +172,6 @@ func DisplayUnBlank(context echo.Context) error {
 	muteValue := "OFF"
 
 	err := helpers.SetAVMute(address, muteValue) //Sets the value to 'OFF'
-
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
@@ -189,25 +184,25 @@ func InputStatus(context echo.Context) error {
 	log.L.Infof("Getting Input status of %s...", context.Param("address")) //Print the messafe of getting status
 	address := context.Param("address")                                    //Get the address of the projector
 
-	err := helpers.GetInput(address)
-
+	//Send the Command to the helper get the status of the input
+	status, err := helpers.GetInput(address)
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	return context.JSON(http.StatusOK, status)
 }
 
-//InputStatus returns the Input status, giving the current input port
+//BlankedStatus returns the Input status, giving the current input port
 func BlankedStatus(context echo.Context) error {
 	log.L.Infof("Getting blanked status of %s...", context.Param("address")) //Print the messafe of getting status
 	address := context.Param("address")                                      //Get the address of the projector
 
-	err := helpers.GetBlankedStatus(address)
-
+	//Send the Command to the helper to get the blanked status
+	status, err := helpers.GetBlankedStatus(address)
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return nil
+	return context.JSON(http.StatusOK, status)
 }

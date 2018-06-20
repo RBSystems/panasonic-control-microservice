@@ -26,12 +26,12 @@ func SetInputPort(address string, inputValue string) error {
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Debugf("Nope Didn't work! - %v", err.Error())
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
 		return err
 	}
 	_, err = t.RoundTrip(req)
 	if err != nil {
-		log.L.Debugf("Nope still didn't work! - %v", err.Error())
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
 		return err
 	}
 	return nil
@@ -44,83 +44,81 @@ func SetAVMute(address string, muteValue string) error {
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Debugf("Nope Didn't work! - %v", err.Error())
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
 		return err
 	}
 	_, err = t.RoundTrip(req)
 	if err != nil {
-		log.L.Debugf("Nope still didn't work! - %v", err.Error())
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
 		return err
 	}
 	return nil
 }
 
 //GetInput returns the current input of the projector
-func GetInput(address string) error {
+func GetInput(address string) (string, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=INPUT", address) //CGI command based on the documentation provided
 
 	//This is for the digest auth for the projector
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Infof("Nope Didn't work! - %v", err.Error())
-		return err
+		log.L.Debugf("Nope Didn't work! - %v", err.Error())
+		return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
-		log.L.Infof("Nope still didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
+		return "", err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.L.Infof("Error retreiving Body. Error:", err)
-		return err
+		log.L.Errorf("Error retreiving Body. Error:", err)
+		return "", err
 	}
-	log.L.Infof("%s", b)
+	log.L.Debugf("%s", b)
 	var status PanasonicInputResponse
 	err = xml.Unmarshal(b, &status) //Unmarshal the XML
 	if err != nil {
-		log.L.Infof("Error:", err)
-		return err
+		log.L.Errorf("Error:", err)
+		return "", err
 	}
 
 	log.L.Infof("Current Input Port: %s", status.Input) //Print out the input, whatever it be
-	return nil
-
+	return status.Input, nil
 }
 
 //GetBlankedStatus returns the blanked status of the projector
-func GetBlankedStatus(address string) error {
+func GetBlankedStatus(address string) (string, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=INPUT", address) //CGI command based on the documentation provided
 
 	//This is for the digest auth for the projector
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Infof("Nope Didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
+		return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
-		log.L.Infof("Nope still didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
+		return "", err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.L.Infof("Error retreiving Body. Error:", err)
-		return err
+		log.L.Errorf("Error retreiving Body. Error:", err)
+		return "", err
 	}
-	log.L.Infof("%s", b)
+	log.L.Debugf("%s", b)
 	var status PanasonicInputResponse
 	err = xml.Unmarshal(b, &status) //Unmarshal the XML
 	if err != nil {
-		log.L.Infof("Error:", err)
-		return err
+		log.L.Errorf("Error:", err)
+		return "", err
 	}
 
 	log.L.Infof("Current Blanked Stauts: %s", status.AVMute) //Print out the input, whatever it be on or off
-	return nil
-
+	return status.AVMute, nil
 }

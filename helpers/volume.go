@@ -24,12 +24,12 @@ func SetVolume(address string, volumeLevel uint8) error {
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Debugf("Nope Didn't work! - %v", err.Error())
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
 		return err
 	}
 	_, err = t.RoundTrip(req)
 	if err != nil {
-		log.L.Debugf("Nope still didn't work! - %v", err.Error())
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
 		return err
 	}
 	return nil
@@ -42,81 +42,81 @@ func SetAudioMute(address string, muteValue string) error {
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Debugf("Nope Didn't work! - %v", err.Error())
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
 		return err
 	}
 	_, err = t.RoundTrip(req)
 	if err != nil {
-		log.L.Debugf("Nope still didn't work! - %v", err.Error())
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
 		return err
 	}
 	return nil
 }
 
 //GetVolume returns the status of the projector, returning if it is on or on standby
-func GetVolume(address string) error {
+func GetVolume(address string) (string, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=AVOLUME", address)
 
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Infof("Nope Didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
+		return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
-		log.L.Infof("Nope still didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
+		return "", err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.L.Infof("Error retreiving Body. Error:", err)
-		return err
+		log.L.Errorf("Error retreiving Body. Error:", err)
+		return "", err
 	}
-	log.L.Infof("%s", b)
+	log.L.Debugf("%s", b)
 	var status PanasonicVolumeResponse
 	err = xml.Unmarshal(b, &status)
 	if err != nil {
-		log.L.Info("Error:", err)
-		return err
+		log.L.Errorf("Error:", err)
+		return "", err
 	}
 
 	log.L.Infof("Volume is at: %s", status.AVolume)
-	return nil
+	return status.AVolume, nil
 
 }
 
 //GetMute returns the status of the projector, returning if it is on or on standby
-func GetMute(address string) error {
+func GetMute(address string) (string, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=AMUTE", address)
 
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
-		log.L.Infof("Nope Didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope Didn't work! - %v", err.Error())
+		return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
-		log.L.Infof("Nope still didn't work! - %v", err.Error())
-		return err
+		log.L.Errorf("Nope still didn't work! - %v", err.Error())
+		return "", err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.L.Infof("Error retreiving Body. Error:", err)
-		return err
+		log.L.Errorf("Error retreiving Body. Error:", err)
+		return "", err
 	}
 	// log.L.Infof("%s", b)
 	var status PanasonicVolumeResponse
 	err = xml.Unmarshal(b, &status)
 	if err != nil {
-		log.L.Infof("Error:", err)
-		return err
+		log.L.Errorf("Error:", err)
+		return "", err
 	}
 
 	log.L.Infof("Mute Status: %s", status.AMute)
-	return nil
+	return status.AMute, nil
 
 }

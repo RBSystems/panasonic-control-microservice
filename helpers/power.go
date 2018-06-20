@@ -35,35 +35,35 @@ func SetPower(address string, powerValue string) error {
 }
 
 //GetPower gets the status of the projector, returning if it is on or on standby
-func GetPower(address string) error {
+func GetPower(address string) (string, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=POWER", address)
 
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
 		log.L.Infof("Nope Didn't work! - %v", err.Error())
-		return err
+		return "", err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
 		log.L.Info("Nope still didn't work! - %v", err.Error())
-		return err
+		return "", err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Infof("Error retreiving Body. Error:", err)
-		return err
+		return "", err
 	}
-	log.L.Infof("%s", b)
+	log.L.Debugf("%s", b)
 	var status PanasonicPowerResponse
 	err = xml.Unmarshal(b, &status)
 	if err != nil {
 		log.L.Info("Error:", err)
-		return err
+		return "", err
 	}
 
 	log.L.Infof("Power status: %s", status.Power)
-	return nil
+	return status.Power, nil
 
 }
