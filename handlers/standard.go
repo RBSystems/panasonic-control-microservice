@@ -68,7 +68,6 @@ func PowerStatus(context echo.Context) error {
 func SetVolume(context echo.Context) error {
 	address := context.Param("address")                      //Get the address of the projector
 	volumeLevel, err := strconv.Atoi(context.Param("level")) //Gets the volume level to be set.
-	log.L.Infof("Setting Volume to %v on %s", volumeLevel, address)
 
 	err = helpers.SetVolume(address, uint8(volumeLevel)) //Use SetVolume to change the volume level
 	if err != nil {
@@ -102,7 +101,7 @@ func Mute(context echo.Context) error {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return context.JSON(http.StatusOK, err)
+	return context.JSON(http.StatusOK, se.MuteStatus{true})
 }
 
 //UnMute umutes the AUDIO projector
@@ -116,14 +115,14 @@ func UnMute(context echo.Context) error {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error
 	}
-	return context.JSON(http.StatusOK, err)
+	return context.JSON(http.StatusOK, se.MuteStatus{false})
 
 }
 
 //MuteStatus returns the Mute status, stating if mute is on or off
 func MuteStatus(context echo.Context) error {
-	log.L.Infof("Getting mute status of %s...", context.Param("address")) //Print that the device is powering on
-	address := context.Param("address")                                   //Get the address of the projector
+
+	address := context.Param("address") //Get the address of the projector
 
 	status, err := helpers.GetMute(address) //Calls the GetMute fuction that parses the XML
 	if err != nil {
@@ -139,7 +138,6 @@ func MuteStatus(context echo.Context) error {
 
 //SetInputPort changes the input port
 func SetInputPort(context echo.Context) error {
-	log.L.Infof("Switching input for %s to %s...", context.Param("address"), context.Param("port"))
 	address := context.Param("address") //Get the address of the projector
 	port := context.Param("port")       //Get the input port of the projector
 
@@ -181,8 +179,7 @@ func DisplayUnBlank(context echo.Context) error {
 
 //InputStatus returns the Input status, giving the current input port
 func InputStatus(context echo.Context) error {
-	log.L.Infof("Getting Input status of %s...", context.Param("address")) //Print the messafe of getting status
-	address := context.Param("address")                                    //Get the address of the projector
+	address := context.Param("address") //Get the address of the projector
 
 	//Send the Command to the helper get the status of the input
 	status, err := helpers.GetInput(address)
@@ -195,8 +192,8 @@ func InputStatus(context echo.Context) error {
 
 //BlankedStatus returns the Input status, giving the current input port
 func BlankedStatus(context echo.Context) error {
-	log.L.Infof("Getting blanked status of %s...", context.Param("address")) //Print the messafe of getting status
-	address := context.Param("address")                                      //Get the address of the projector
+
+	address := context.Param("address") //Get the address of the projector
 
 	//Send the Command to the helper to get the blanked status
 	status, err := helpers.GetBlankedStatus(address)

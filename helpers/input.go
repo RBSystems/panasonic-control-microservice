@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"github.com/bobziuchkovski/digest"
+	"github.com/byuoitav/av-api/statusevaluators"
 	"github.com/byuoitav/common/log"
 )
 
@@ -21,6 +22,7 @@ type PanasonicInputResponse struct {
 
 //SetInputPort sends the CGI command to switch inputs
 func SetInputPort(address string, inputValue string) error {
+	log.L.Infof("Switching input for %s to %s...", address, inputValue)
 
 	command := fmt.Sprintf("http://%s/cgi-bin/controlCmd.cgi?param=INPUT&value=%s", address, inputValue) //CGI command based on the documentation provided
 	t := digest.NewTransport("byuav", "test")
@@ -56,69 +58,84 @@ func SetAVMute(address string, muteValue string) error {
 }
 
 //GetInput returns the current input of the projector
-func GetInput(address string) (string, error) {
+func GetInput(address string) (statusevaluators.Input, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=INPUT", address) //CGI command based on the documentation provided
+	log.L.Infof("Getting Input status of %s...", address)                         //Print the messafe of getting status
 
 	//This is for the digest auth for the projector
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
 		log.L.Debugf("Nope Didn't work! - %v", err.Error())
-		return "", err
+		return statusevaluators.Input{}, err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
 		log.L.Errorf("Nope still didn't work! - %v", err.Error())
-		return "", err
+		return statusevaluators.Input{}, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Errorf("Error retreiving Body. Error:", err)
-		return "", err
+		return statusevaluators.Input{}, err
 	}
 	log.L.Debugf("%s", b)
-	var status PanasonicInputResponse
-	err = xml.Unmarshal(b, &status) //Unmarshal the XML
+	var response PanasonicInputResponse
+	err = xml.Unmarshal(b, &response) //Unmarshal the XML
 	if err != nil {
 		log.L.Errorf("Error:", err)
-		return "", err
+		return statusevaluators.Input{}, err
 	}
 
-	log.L.Infof("Current Input Port: %s", status.Input) //Print out the input, whatever it be
-	return status.Input, nil
+	log.L.Infof("Current Input Port: %s", response.Input) //Print out the input, whatever it be
+
+	status := statusevaluators.Input{
+		Input: string(response.Input),
+	}
+	return status, nil
 }
 
 //GetBlankedStatus returns the blanked status of the projector
-func GetBlankedStatus(address string) (string, error) {
+func GetBlankedStatus(address string) (statusevaluators.BlankedStatus, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=INPUT", address) //CGI command based on the documentation provided
+	log.L.Infof("Getting blanked status of %s...", address)                       //Print the messafe of getting status
 
 	//This is for the digest auth for the projector
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
 		log.L.Errorf("Nope Didn't work! - %v", err.Error())
-		return "", err
+		return statusevaluators.BlankedStatus{}, err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
 		log.L.Errorf("Nope still didn't work! - %v", err.Error())
-		return "", err
+		return statusevaluators.BlankedStatus{}, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Errorf("Error retreiving Body. Error:", err)
-		return "", err
+		return statusevaluators.BlankedStatus{}, err
 	}
 	log.L.Debugf("%s", b)
-	var status PanasonicInputResponse
-	err = xml.Unmarshal(b, &status) //Unmarshal the XML
+	var response PanasonicInputResponse
+	err = xml.Unmarshal(b, &response) //Unmarshal the XML
 	if err != nil {
 		log.L.Errorf("Error:", err)
-		return "", err
+		return statusevaluators.BlankedStatus{}, err
 	}
 
-	log.L.Infof("Current Blanked Stauts: %s", status.AVMute) //Print out the input, whatever it be on or off
-	return status.AVMute, nil
+	log.L.Infof("Current Blanked Stauts: %s", response.AVMute) //Print out the input, whatever it be on or off
+
+	var status statusevaluators.BlankedStatus
+
+	if response.AVMute == "ON" {
+		status.Blanked = true
+	} else if response.AVMute == "OFF" {
+		status.Blanked = false
+	}
+
+	return status, nil
 }

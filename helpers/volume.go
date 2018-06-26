@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	"github.com/bobziuchkovski/digest"
+	se "github.com/byuoitav/av-api/statusevaluators"
 	"github.com/byuoitav/common/log"
 )
 
@@ -19,6 +21,7 @@ type PanasonicVolumeResponse struct {
 
 //SetVolume sets the volume of the projector
 func SetVolume(address string, volumeLevel uint8) error {
+	log.L.Infof("Setting Volume to %v on %s", volumeLevel, address)
 
 	command := fmt.Sprintf("http://%s/cgi-bin/controlCmd.cgi?param=AVOLUME&value=%v", address, volumeLevel)
 	t := digest.NewTransport("byuav", "test")
@@ -54,69 +57,81 @@ func SetAudioMute(address string, muteValue string) error {
 }
 
 //GetVolume returns the status of the projector, returning if it is on or on standby
-func GetVolume(address string) (string, error) {
+func GetVolume(address string) (se.Volume, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=AVOLUME", address)
 
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
 		log.L.Errorf("Nope Didn't work! - %v", err.Error())
-		return "", err
+		return se.Volume{}, err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
 		log.L.Errorf("Nope still didn't work! - %v", err.Error())
-		return "", err
+		return se.Volume{}, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Errorf("Error retreiving Body. Error:", err)
-		return "", err
+		return se.Volume{}, err
 	}
 	log.L.Debugf("%s", b)
 	var status PanasonicVolumeResponse
 	err = xml.Unmarshal(b, &status)
 	if err != nil {
 		log.L.Errorf("Error:", err)
-		return "", err
+		return se.Volume{}, err
 	}
 
 	log.L.Infof("Volume is at: %s", status.AVolume)
-	return status.AVolume, nil
+
+	level, err := strconv.Atoi(status.AVolume)
+	if err != nil {
+		return se.Volume{}, err
+	}
+
+	return se.Volume{Volume: level}, nil
 
 }
 
 //GetMute returns the status of the projector, returning if it is on or on standby
-func GetMute(address string) (string, error) {
+func GetMute(address string) (se.MuteStatus, error) {
 	command := fmt.Sprintf("http://%s/cgi-bin/queryCmd.cgi?param=AMUTE", address)
+	log.L.Infof("Getting mute status of %s...", address) //Print that the device is powering on
 
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
 		log.L.Errorf("Nope Didn't work! - %v", err.Error())
-		return "", err
+		return se.MuteStatus{}, err
 	}
 	resp, err := t.RoundTrip(req)
 	if err != nil {
 		log.L.Errorf("Nope still didn't work! - %v", err.Error())
-		return "", err
+		return se.MuteStatus{}, err
 	}
 
 	b, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.L.Errorf("Error retreiving Body. Error:", err)
-		return "", err
+		return se.MuteStatus{}, err
 	}
 	// log.L.Infof("%s", b)
-	var status PanasonicVolumeResponse
-	err = xml.Unmarshal(b, &status)
+	var response PanasonicVolumeResponse
+	err = xml.Unmarshal(b, &response)
 	if err != nil {
 		log.L.Errorf("Error:", err)
-		return "", err
+		return se.MuteStatus{}, err
 	}
 
-	log.L.Infof("Mute Status: %s", status.AMute)
-	return status.AMute, nil
+	log.L.Infof("Mute Status: %s", response.AMute)
+
+	if response.AMute == "ON" {
+		return se.MuteStatus{Muted: true}, nil
+	} else {
+		return se.MuteStatus{Muted: false}, nil
+	}
 
 }
