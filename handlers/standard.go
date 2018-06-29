@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -68,8 +69,12 @@ func PowerStatus(context echo.Context) error {
 func SetVolume(context echo.Context) error {
 	address := context.Param("address")                      //Get the address of the projector
 	volumeLevel, err := strconv.Atoi(context.Param("level")) //Gets the volume level to be set.
+	if err != nil {
+		log.L.Warnf("Invalid volume level, non integer passed in request")
+		return context.JSON(http.StatusBadRequest, fmt.Sprintf("Invalid volume level %s. Must be in range 0-100. %s", volumeLevel, err.Error()))
+	}
 
-	err = helpers.SetVolume(address, uint8(volumeLevel)) //Use SetVolume to change the volume level
+	err = helpers.SetVolume(address, float64(volumeLevel)) //Use SetVolume to change the volume level
 	if err != nil {
 		log.L.Errorf("Error: %v", err.Error())                           //Print out the error is being received
 		return context.JSON(http.StatusInternalServerError, err.Error()) //Return that error and a server error

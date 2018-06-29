@@ -10,6 +10,7 @@ import (
 	"github.com/bobziuchkovski/digest"
 	se "github.com/byuoitav/av-api/statusevaluators"
 	"github.com/byuoitav/common/log"
+	"github.com/byuoitav/common/nerr"
 )
 
 //PanasonicVolumeResponse is a struct for parsing the XML responses
@@ -20,10 +21,18 @@ type PanasonicVolumeResponse struct {
 }
 
 //SetVolume sets the volume of the projector
-func SetVolume(address string, volumeLevel uint8) error {
+func SetVolume(address string, volumeLevel float64) error {
 	log.L.Infof("Setting Volume to %v on %s", volumeLevel, address)
 
-	command := fmt.Sprintf("http://%s/cgi-bin/controlCmd.cgi?param=AVOLUME&value=%v", address, volumeLevel)
+	if volumeLevel > 100 || volumeLevel < 0 {
+		return nerr.Create(fmt.Sprintf("Invalid volume level %v: must be in range 0-100", volumeLevel), "params")
+	}
+
+	//Do some quick mafs for optimizing the volume since the panasonic can only take volume from 0-62
+
+	level := (volumeLevel / 100) * 62
+
+	command := fmt.Sprintf("http://%s/cgi-bin/controlCmd.cgi?param=AVOLUME&value=0%v", address, level)
 	t := digest.NewTransport("byuav", "test")
 	req, err := http.NewRequest("GET", command, nil)
 	if err != nil {
